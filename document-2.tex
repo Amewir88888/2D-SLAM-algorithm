@@ -1,0 +1,454 @@
+\documentclass[10pt,twocolumn]{article}
+
+% use the oxycomps style file
+\usepackage{oxycomps}
+
+% usage: \fixme[comments describing issue]{text to be fixed}
+% define \fixme as not doing anything special
+\newcommand{\fixme}[2][]{#2}
+% overwrite it so it shows up as red
+\renewcommand{\fixme}[2][]{\textcolor{red}{#2}}
+% overwrite it again so related text shows as footnotes
+%\renewcommand{\fixme}[2][]{\textcolor{red}{#2\footnote{#1}}}
+
+% read references.bib for the bibtex data
+\bibliography{oxy-cs-comps-paper-template-main/references}
+
+% include metadata in the generated pdf file
+\pdfinfo{
+    /Title (The Occidental Computer Science Comprehensive Project: Goals, Timeline, Format, and Advice)
+    /Author (Justin Li)
+}
+
+% set the title and author information
+\title{2D Simultaneous Localization and Mapping Algorithm}
+\author{Amelia Wirth}
+\affiliation{Occidental College}
+\email{wirth@oxy.edu}
+
+\begin{document}
+
+\maketitle
+
+\section{Problem Statement} 
+
+% What problem are you solving? Why is it important?
+
+
+My project objective was to solve the problem of simultaneous localization and mapping by writing my own version of a SLAM algorithm in Python. SLAM (Simultaneous Localization and Mapping) refers to the problem of building a map of an unknown environment and at the same time, localizing within that environment. SLAM is significant as a field of robotics that has been advancing for decades \cite{1-Introduction_to_SLAM}. The reason SLAM is such an important topic in robotics is because it allows robots to operate autonomously in unknown environments, which is particularly useful in cases where existing maps are not available or outdated \cite{2-Overview_of_SLAM}.
+
+
+
+\section{Technical Background} 
+% What does someone need to know to understand the problem?
+
+\subsection{Mapping and Localization}
+
+SLAM has two major components that it aims to achieve. One of them is mapping, which answers the overarching question of “what does the world around me look like?" It involves collecting sensor data to understand what is in its environment, taking note of reference points such as walls, obstacles, or other objects. The other main component is localization, which answers the overarching question of “where am I?” Localizing means estimating the pose of the robot at a given point in time. Pose refers to the position and orientation of the robot \cite{2-Overview_of_SLAM}. 
+
+
+
+
+\subsection{Occupancy Grid}
+A concept that greatly inspired my approach to writing the algorithm was the occupancy grid. An occupancy grid is a map representation where the environment is divided into a grid of cells (typically 2D), and each cell is assigned the probability of either being occupied or empty.
+
+
+\subsection{Types of errors in SLAM}
+
+A big challenge in robotics and SLAM is taking into account noise such as motion noise or sensor noise, and how that impacts the results of the algorithm. When robots interact with the physical world, there are many issues they can face, such as friction between the wheels and the ground. Drift refers to the accumulation of errors due to imperfect sensors, which can result in increasingly inaccurate representations of the environment \cite{3-Accuracy_of_SLAM}. 
+
+Another kind of error to take into account is tracking error. Tracking errors can occur if robots struggle with different environments, such as a long empty hallway that doesn’t include a lot of environmental features that the robot relies on to build a map \cite{3-Accuracy_of_SLAM}. 
+
+
+
+\subsection{Bayes Theorem}
+
+To enable my algorithm to account for motion noise, it required me to use statistical methods and probability to derive accurate predictions of all possible maps and locations the robot could be in. The math I used was inspired by Bayes filter which is a probabilistic representation of the system’s state or belief \cite{5-Occupancy_grids}. In the context of robots, the robot’s belief refers to its presumption of its configuration or state \cite{5-Occupancy_grids}. Through Bayesian estimation, the belief probabilities are updated when new information is acquired. In the formula for Bayes theorem shown below, there are 2 variables A and B. 
+$$P(A \mid B) = \frac{P(B \mid A)\, P(A)}{P(B)}$$
+In this context, $P(A \mid B)$ represents the probability of event A happening given event B. $P(B \mid A)$ represents the inverse which is the probability of event B happening given event A. P(A) represents the prior probability of hypothesis A, and P(B) represents the total probability of evidence B. This equation is used to derive the probability of new map estimations, given original map estimations. The division of P(B) is the normalization factor, which is the process of converting data to a common scale, and is useful for ensuring that the probabilities of each map are accurately set to scale. 
+
+
+
+\section{Prior Work} 
+% How have other people solved similar problems? What inspirations are you drawing from?
+
+\subsection{Real World applications}
+
+SLAM is widely used in many different types of robots. A commonly used example is robotic vacuum cleaners. SLAM is necessary for these robots because it allows them to be placed in unfamiliar environments such as a living room, and be able to navigate within that environment. Another crucial thing about SLAM is the ability to update the map estimations, which is necessary since in houses, there can be many changes to the environment such as a chair moving, or a new couch added. Utilizing SLAM allows the vacuum cleaner to update places that have changed from its previous scan \cite{1-Introduction_to_SLAM}, rather than having an already prebuilt map that may not stay accurate over time. This aspect is also advantageous with autonomous cars, since they must account for changes in urban and highway settings \cite{4-warehouseSLAM}. Following this logic, I knew I had to incorporate a method for the robot to continuously update its estimation of what it’s environment looks like as it takes in new information. A big advantage of SLAM is the ability to explore places when it may be impossible to get a map, such as a mineshaft, volcanic tunnel, or different planets \cite{1-Introduction_to_SLAM}. With this in mind, one of the key things I wanted to focus on was for my algorithm to be applicable to many different types of environments.
+
+\subsection{Occupancy grid}
+
+A concept that greatly inspired my approach to writing the algorithm was the occupancy grid. Albertos Elfes wrote about occupancy grids and their role in mobile robot perception and navigation, about the use of probabilistic sensor models to help construct a sensor-derived map of the robot’s world \cite{5-Occupancy_grids}. He discusses the use of Bayes' theorem as a way of updating the probabilities of occupancy grids when new information is gained \cite{5-Occupancy_grids}. The grid inspired my approach to how I designed the environments for testing in my algorithm, as a list of nested arrays, in which each index contains either a 0 to represent an obstacle, or '-' to represent an empty cell. As the robot continues to explore its environment, it updates its own maps estimations with more 0’s and ‘-’ to represent what it has explored.
+
+
+\subsection{Sensors in SLAM}
+Just like humans have eyes to take in information about the world around them, robots have sensors to give them information about their environment. There are a variety of sensors that are used in SLAM robotics. For instance, some SLAM robots use cameras to produce high-resolution, detailed images. By distinguishing differences in shapes and colors through the image pixels, the robot can identify when there are different objects \cite{1-Introduction_to_SLAM}. Another sensor commonly used in SLAM is lidar which stands for Light detection and ranging. It uses lasers to measure variable distances to objects \cite{7-Lidar}. Rather than producing images like camera-based SLAM, a lidar sensor primarily collects information about the depth and geometry of the objects captured \cite{7-Lidar}. Different kinds of sensors are useful when there are different goals for what the robot is meant to achieve, and understanding this was crucial for me to figure out what method I wanted to use to enable the robot to sense its surroundings. 
+
+Because I chose to follow an occupancy grid approach, I thought it would be best to use a sensor that returns information to simply indicate whether it detected an object or not. I decided to think of the robots sensors as similar to infrared sensors or ultrasonic sensors. Infrared sensors consist of a transmitter and receiver, where the transmitter transmits infrared light that is reflected back from objects and then received by the sensor's receiver \cite{8-InfraredSensors}. The transmission of infrared light is how the robot can detect objects, since there is either an object to reflect the light back or there is not. Ultrasonic sensors are also useful for detecting objects. They work similarly to IR sensors in that they also contain transmitters and receivers. Ultrasonic sensors send out a sound wave, and then determine the distance to a target by measuring the time it took to return to the receiver \cite{9-UltrasonicSensors}. When I was thinking of how the robot would operate in a 2D environment, I imagined it having four infrared or ultrasonic sensors, each for detecting objects directly to its left, right, and above, and below. I consider the sensor data processing as using the concepts of transmitter and receiver, with a function for checking each direction (transmitting), and then receiving and interpreting the information.
+
+
+\section{Methods} 
+% How did you go about solving the problem? What did you do?
+
+My approach was to write an algorithm to enable a robot to distinguish between obstacles and empty spaces, as well as move around within that environment, and implement SLAM concepts to produce updated maps. The goal was that as the robot continues to explore its environment, it would gain more sensor data and thus produce more detailed map estimations of its environment.
+
+\subsection{Localization in 1D}
+
+In the beginning of the project, I had a lot of uncertainty when it came to tackling the entire 2D SLAM algorithm from scratch. In my meetings with Professor Li, he guided me through breaking down the project into more manageable chunks by starting with a simpler 1D environment. Before coding, I focused on understanding the theory behind how the robot would behave in a 1D environment. 
+
+My first goal was to understand how to enable the robot to localize within a known environment using probability distributions. The probability distributions represent each cell and the probability that the robot was in that cell. The initial constraints of the environment included a 5 cell 1D line, with a wall on either end of the line. A visual represntation of what this looked like is shown below:
+
+
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Slot 1 & Slot 2 & Slot 3 & Slot 4 & Slot 5 \\
+\hline
+\end{tabular}
+
+
+In addition, I assumed 100 percent accuracy for both sensors and movements. Before attempting to code, I would draw out the 5 cells as a line, and then test different scenarios with the robot unsure of its initial spot. Before the robot did any actions, it is fair to assume that there is an equal probability of the robot being in any of the 5 spots. Therefore, each cell has a ⅕ probability that the robot is in that cell. The initial probability distribution is thus [1/5,1/5,1/5,1/5,1/5].
+
+The first step in the algorithmic process was for the robot to gain sensor data based on its initial location. In a 1D environment, this sensor data would be interpreted as an array of two binary values representing what it detected to the left and right. I used 1 to represent there being an empty space, and 0 to represent. So if the robot detected a wall to the left, sensor data would read [0,1]. If it detected a wall to the right, the sensor data would read [1,0]. And if it detected empty spaces on both sides, the sensor data would read [1,1]. In this environment, those are only three possible sensor readings since it is impossible for the robot to detect walls on both sides. 
+
+After gaining sensor data, the robot has to interpret the sensor data and determine how it affects the probability distribution. In the beginning, we assume each cell has a 1/5 probability of being occupied by the robot. If the sensor data returns [0,1], we know that to the left of the robot is a wall, and therefore the robot must be in the first cell. The probability distribution would thus be [1,0,0,0,0]. The same logic applies to if the sensor data read [1,0], in that the probability distribution would then be [0,0,0,0,1]. However, if the sensor data read [1,1], that meant there was empty space on both sides of the robot, therefore it could not be in slot 1 or 5, and instead must be in one of the middle three slots. To come up with the new probability distribution, the algorithm must first eliminate the possibility of the robot being in slot 1 or 5, which would lead to the new distribution of [0,1/5,1/5,1/5,0]. This illustrates how obstacles are helpful for robots to map their environment, since they provide greater insights into what the robot’s surroundings are, thus reducing the issue of tracking error \cite{3-Accuracy_of_SLAM}. 
+
+After eliminating the two slots that the robot could not possibly be in, it is necessary to note that the probability distribution of [0,1/5,1/5,1/5,0] is not complete. This is because it is not true that there is just a 1/5 chance the robot is in the middle three slots, since that would leave a 2/5 probability that is unaccounted for. It implies that there is a 3/5 chance that the robot is in one of the 3 middle slots, when we know that there is actually a 100 percent chance it has to be in one of the 3 middle slots. Therefore, if any slots are eliminated, it is necessary to normalize the probability distribution so that the probabilities accurately add up to 1. In the formula for Bayes theorem \cite{6-Bayes_filter}, this would be reflected in the normalization factor of P(B), and would represent the summation of all the probabilities in the new map estimation. In this case P(B) would be 1/5+1/5+1/5 which would sum to 3/5. To normalize each cell probability, they must each be divided by P(B), and that would result in the new probability distribution of [0,1/3,1/3,1/3,0]. 
+
+After the robot gains its initial sensor reading and probability distribution of its environment, it can then move around the environment. For the sake of simplicity, I initially programmed the robot to only move right. After moving right, the robot would gain a new sensor reading. This would have to either be [1,0] or [1,1]. In this case it is important to note that the new sensor reading cannot be [0,1], since it is impossible for a robot to move right from its initial position, and detect a wall to its left, as it is already clear that the slot to the left of the robot’s current position is empty. If the robot moves right and detects [1,0], it is evident that the robot is to the left of a wall, and the probability distribution is [0,0,0,0,1]. However, if the robot detected [1,1], the probability distribution must be updated again with knowledge of the robot's previous steps. To illustrate this concept, let's assume that the robot’s initial sensor reading was [1,1], which would lead to the probability distribution of [0,1/3,1/3,1/3,0]. We know that the robot couldn’t possibly be any further right than slot 2, and therefore, if the robot moved right, we can eliminate the probability that the robot’s current location is slot 2. The process is similar to what happened in the beginning, where we eliminated the probability of slot 2, thus producing a probability distribution of [0,0,1/3,1/3,0], and then normalized the distribution to give the result of [0,0,1/2,1/2,0]. The robot now has the knowledge that there is a 50 percent chance it could be in either slot 3 or slot 4.
+
+Following the case of the probability distribution being [0,0,1/2,1/2,0], the robot chooses to move right once more, and gains a new sensor reading. Similar to before, this sensor reading can either be [1,0] or [1,1]. If the robot is [1,1], we know that there is empty space on both sides of the robot, and that we can also eliminate the third slot as being a possibility for the robot's current location. Therefore, the new probability distribution after normalizing would be [0,0,0,1,0]. This shows that after multiple iterations of movements, the robot has an increasingly certain estimation of its location (some cell probabilities become closer to 1). 
+
+This process helped me understand a lot of the initial steps that I would have to apply to my actual algorithm including gaining sensor data, incorporating robot movements, updating probability distributions, and normalizing the probabilities.
+
+
+\subsection{Incorporating motion error in 1D}
+
+After completing the first goal of localization in a known environment with full motion accuracy, I switched to the new goal of updating the algorithm to incorporate the possibility of motion errors. Professor Li explained in our meetings how to incorporate this by coming up with an error probability that the robot’s movement did not actually match its intention. For instance, there could be a 2/3 probability that when the robot chose to move right, the robot was successful in moving right. A robot moving right with 2/3 accuracy also implies that there is a 1/3 chance that the robot did not actually move, and thus stayed in its original spot. For the sake of consistency throughout the paper, I will continue using 2/3 as the movement probability error. However, in the final algorithm, the movement error probability is a variable that can be changed to reflect different accuracies. 
+
+Given that the movements are not fully accurate, the probability distributions change to reflect this. To illustrate this, I will reference the original example of starting with a sensor reading of [1,1] and a probability distribution of [0,1/3,1/3,1/3,0]. The robot wants to move right, but unlike before, we cannot simply eliminate the possibility of slot 2 and normalize the distribution, since there is now the possibility that the robot did not actually move. To account for this, I updated the algorithm so that rather than just including one new map, it would produce two map possibilities, one for if the robot stayed, and one for if the robot moved. In this step, the distribution for if it stayed would be the same [0,1/3,1/3,1/3,0]. If it moved right, the distribution would be [0,0,1/3,1/3,0]. Something to note is that to produce accurate estimations, I did not normalize the probability distributions in this step, instead that would happen as the final step. 
+
+After coming up with the two probability distributions, I applied Bayes' Theorem again by multiplying the probability of the new state (1/3 for if it stayed, and 2/3 if it moved) by each cell probability in that map. Therefore, the probability distribution of the map where the robot stayed would be [0,1/9,1/9,1/9,0] since I multiplied each cell probability of 1/3 (In Bayes' theorem, this is reflected as $P(B \mid A)$) by 1/3 (P(A) in Bayes' theorem). Following this logic, the probability of the distribution of the map in which the robot did move would be 2/3 multiplied by [0,0,1/3,1/3,0] to produce [0,0,2/9,2/9,0]. Since the two maps represent the same environment, I then combined the probability distributions of both maps to produce the final result of the new probability distribution. This consisted of adding each cell probability with the corresponding cell probability in the other map, coming to the result of [0,1/9,3/9,3/9,0]. As in previous cases, this has to be normalized to be fully accurate, and after doing so, the final result is [0,1/7,3/7,3/7,0]
+
+After multiple iterations of this algorithm, it is shown that until the robot detects a wall, the probability of slot 2 never becomes 0; rather, it just gets closer to 0. This is another element of SLAM in that because there is so much room for error, oftentimes the algorithm is just producing the possible estimations rather than direct, accurate representations. 
+
+
+\subsection{Full SLAM in 1D}
+
+After I was able to produce accurate results for the probability distributions of localizing with motion error, I moved to the next goal of achieving full SLAM in 1D. This meant having both mapping and localization, and also removing the constraint that the robot could only move in one direction. 
+
+To tackle the issue of including both mapping and localization, I had to start from scratch in terms of understanding how the mapping would work when the robot does not know the constraints of its environment. This meant the robot also would not know the length of its original probability distribution, so I needed to find a different way to show the different possibilities with motion error. Rather than including a probability distribution to show where the robot is, I transitioned to a different method of assigning each map and localization of the robot to a specific probability. By doing this, I was able to combine the mapping and localization to one corresponding probability.
+
+The very first step was still the same, in that the robot had its initial sensor reading. However, rather than producing just a probability distribution, it now also needs to provide an actual map estimation. Similar to before, the first reading could be one of three options. If it was [1,1], that means the robot has empty space on both sides, and so the updated map would be  - * - where the dash represents an empty space and the star represents the robot. If the sensor reading returned [1,0], the updated map would be - * $\mid$, with the vertical line representing a wall. And if the sensor data was [0,1], the updated map would be $\mid$ * -. In the very first sensor reading, there is one possible map and localization within that map. Therefore, the probability of map 1 is 1. To store these values, I assigned each map and corresponding probability as a key-value pair in a dictionary. The key would be a tuple including the map number (e.g., map 1, map 2, etc.) and the probability of that map. The value would be the map estimation. For example if the very first sensor reading was [1,1], the dictionary would include one item of: 
+
+(map 1, probability 1: - * -)
+
+After receiving the first sensor reading, the robot then moves either left or right. To address the issue of allowing the robot to move in random directions, I added a new variable for the direction, and used a function with a random number generator to randomly assign the direction to be left or right. After the robot attempts to move in the randomly generated direction, it gets a new sensor reading. It then has to update its collection of maps to include both the map if the robot actually stayed in the same spot, and the new updated map if the robot did move. For example, if the map collection consists of the one map of - * -, and the robot attempted to move left and gained a sensor reading of [1,1], the updated map (if the robot did actually leave) would be - * - -. This shows that the robot moved left, and also still has empty space on either side. By moving left and gaining more sensor data, the robot is increasing its knowledge of the map, which is shown in the increase from three slots to four slots in the updated map. I used Bayes theorem to derive the new probabilities. So for the case of the robot staying, the new probability would be (1/3*1)/1 = 0.333. The probability of the updated map would (2/3*1)/1=0.667. Therefore the robot’s knowledge of its environment (including its location within that environment) now includes two possible map estimations in their corresponding probabilities.
+
+There were two other key functionalities I needed to add to the algorithm for the map collection to be accurate, one of which is checking for invalid maps. The reason it is important to check for invalid maps is that some maps may not be an accurate representation of the new sensor data. For instance, returning to the original example of the map collection consisting only of (map 1, probability 1: - * -), the robot could try to move right and gain a new sensor reading of [1,0]. The new map collection would include two maps of - * - and - - * $\mid$. The first map in this collection has to be inaccurate because it does not reaffirm the sensor data, which tells the robot that there is a wall to the left of it. Therefore, that map is eliminated from the collection of possible maps, and the probability of the valid map is normalized. This results in the new updated map collection to include one map with a probability of 1 that looks like - - * $\mid$.
+
+The next key functionality is to combine duplicate maps. To illustrate how this might happen, I'll use an example where the current map collection consists of two possible map estimations, which are (map 1, probability: 0.333 - * -) and (map 2, probability: 0.667: - - * -), and the robot attempts to move right and gains a sensor reading of [1,1]. If the robot wanted to move right, the part of the algorithm using Bayes theorem would be applied to both maps. For the first map, there would be two new possible maps: one for if the robot stayed, and one for if the robot left. The probability of the robot staying given the first map would be (1/3*1/3)/1=0.111. The probability of the robot leaving given the first map would then be (1/3*2/3)/1=0.222. After repeating this process with the second map, the new map collection consists of four maps, which would be: 
+\begin{itemize}
+    \item Map 1, probability 0.111: \(- * -\)
+    \item Map 2, probability 0.222: \(-\ -\ * -\)
+    \item Map 3, probability 0.222: \(-\ -\ * -\)
+    \item Map 4, probability 0.444: \(-\ -\ -\ * -\)
+\end{itemize}
+Because map 2 and map 3 are the same map and include the same localization of the robot, it is not necessary for them to exist as two separate map estimations. Therefore, the probabilities of map 2 and 3 are added together to equal 0.444 and assigned to that one map. Our resulting map collection consists of three maps.
+
+Below is an example of the test results from running the algorithm for 10 iterations. The very last line indicates the actual map, and the robots true location. By the end of the 10 iterations, the algorithm comes up with an accurate representation of the map and localization with a probability of 0.444
+
+\begin{verbatim}
+{(1, 1): [_ * _]}
+________
+     Iteration 1
+robot wants to move left
+robot detects [0, 1]
+Map: 1  Probability: 1.0: | * _ _ 
+
+     Iteration 2
+robot wants to move right
+robot detects [0, 1]
+Map: 1  Probability: 1.0: | * _ _ 
+
+     Iteration 3
+robot wants to move left, it cannot
+robot detects [0, 1]
+Map: 1  Probability: 1.0: | * _ _ 
+
+     Iteration 4
+robot wants to move right
+robot detects [1, 1]
+Map: 1  Probability: 1.0: | _ * _ 
+
+     Iteration 5
+robot wants to move left
+robot detects [1, 1]
+Map: 1  Probability: 1.0: | _ * _ 
+
+     Iteration 6
+robot wants to move right
+robot detects [1, 1]
+Map: 1  Probability: 0.333: | _ * _ 
+Map: 2  Probability: 0.666: | _ _ * _ 
+
+     Iteration 7
+robot wants to move right
+robot detects [1, 1]
+Map: 1  Probability: 0.111: | _ * _ 
+Map: 2  Probability: 0.444: | _ _ * _ 
+Map: 3  Probability: 0.444: | _ _ _ * _ 
+
+     Iteration 8
+robot wants to move right
+robot detects [1, 1]
+Map: 1  Probability: 0.037: | _ * _ 
+Map: 2  Probability: 0.222: | _ _ * _ 
+Map: 3  Probability: 0.444: | _ _ _ * _ 
+Map: 4  Probability: 0.296: | _ _ _ _ * _ 
+
+     Iteration 9
+robot wants to move right
+robot detects [1, 0]
+Map: 1  Probability: 0.037: | _ _ * | 
+Map: 2  Probability: 0.222: | _ _ _ * | 
+Map: 3  Probability: 0.444: | _ _ _ _ * | 
+Map: 4  Probability: 0.296: | _ _ _ _ _ * | 
+
+     Iteration 10
+robot wants to move right, it cannot
+robot detects [1, 0]
+Map: 1  Probability: 0.037: | _ _ * | 
+Map: 2  Probability: 0.222: | _ _ _ * | 
+Map: 3  Probability: 0.444: | _ _ _ _ * | 
+Map: 4  Probability: 0.296: | _ _ _ _ _ * | 
+
+ACTUAL MAP AND LOCATION: 
+| _ _ _ _ * |  
+\end{verbatim}
+
+
+After finally completing full SLAM in 1D, I had a much clearer understanding of SLAM concepts as well as all the necessary components that I would need for the final output. I was then able to create an outline of the key steps of the algorithm. 
+
+
+\subsection{Transitioning to 2D}
+
+After I completed full SLAM in 1D, I had a lot of the foundation done for when I needed to transition to 2D, except for a few alterations I needed to make. One of the alterations was instead of just accounting for left and right directions, I needed to include up and down as well. The new sensor data would read as [left, up, right, down]. The other alteration was switching from using a single line array to using nested arrays to portray a 2D environment. Some of the challenges I faced with this was the different rows being different sizes when there were updates made to the maps, which would affect the visual representation of the map. This meant I not only had to account for the empty spaces and obstacles, but unexplored areas as well. With the 2D line, adding extra maps and obstacles was much simpler because I could easily append or insert them along the array. Whereas with nested arrays, adding one explored area meant I needed to update all the rows to match. Another aspect that required a lot of updates was checking for invalid maps. Since there was increased information in the sensor readings, that meant there was also a lot more that the algorithm had to check for to make sure each map correctly followed the sensor readings. A lot of the challenges faced in this last part were more to do with the coding architecture rather than needing to come up with new algorithm functionalities. In that sense the transition from 1D to 2D was not too difficult.
+
+\section{Evaluation Metrics} 
+% How will we know that the problem has been solved?
+
+\subsubsection{Achieving Mapping and Localization in 2D}
+
+The main requirement to ensure my algorithm worked was if it was effective at executing SLAM, meaning it was able to build a map of the robot's surroundings without the robot having any prior knowledge of the environment, as well as localizing the robot within that environment. To see if this works the algorithm should be able to run for multiple iterations, and over time be effectively updating the maps when new sensor data is received. 
+
+\subsection{Handling motion error and producing accurate probability calculations}
+
+An important metric of SLAM is its effectiveness at reducing tracking errors and drift \cite{3-Accuracy_of_SLAM}. The algorithm should be able to produce different probabilities of map estimations (including the robot’s location) given a certain motion error probability. The map estimate collection should always include a map with the robot’s accurate location in reference to its surroundings. The probabilities of each map should be accurately calculated and should match the results if calculated manually.
+
+\subsection{Applicability to different environments}
+One of the main reasons SLAM is important is its ability to navigate different kinds of environments \cite{1-Introduction_to_SLAM}. The algorithm should thus enable the robot to navigate a variety of different environments, including environments that are different shapes and sizes, and with obstacles in different places. 
+
+
+\section{Results and Discussion} 
+ % Did you actually solve the problem? Why/Why not?
+
+\subsection{SLAM with motion error}
+My algorithm was eventually able to achieve the requirements in my evaluation metrics, as it was effective at updating maps over iterations, in which the robot was clearly localized. I was also able to come up with accurate probabilities matching the mathematical method I used for calculating them. The way I tested this was using multiple test cases with many different instructions, calculating them by hand, and then running the algorithm with those instructions to make sure that everything matched. For instance, I could have a test case that included the directions of: 
+\begin{enumerate}
+    \item Robot moves left, detects [0, 1, 0, 1].
+    \item Robot moves up, detects [0, 1, 1, 1].
+    \item Robot moves right, detects [0, 0, 0, 1].
+\end{enumerate}
+By drawing out what the maps should look like by hand, I was able to compare them to what the algorithm produced, and ensure that it was accurate. 
+
+The test results below show an example of the robot's map estimations after 598 iterations up to 600 iterations (3 iterations total). 
+
+
+\begin{verbatim}
+ITERATION 598
+robot is trying to move left 
+robot gains [0, 0, 1, 0]
+Map: 1  Probability: 1.0 : 
+      0 0   
+    0 _ _ 0 
+  0 _ _ _ 0 
+0 _ _ 0 _ 0 
+0 _ _ 0 _ 0 
+  0 _ _ _ 0 
+  _ _ 0 _ 0 
+    0 * _ 0 
+      0 0   
+
+ITERATION 599
+robot is trying to move right 
+robot gains [1, 1, 0, 0]
+Map: 1  Probability: 1.0 : 
+      0 0   
+    0 _ _ 0 
+  0 _ _ _ 0 
+0 _ _ 0 _ 0 
+0 _ _ 0 _ 0 
+  0 _ _ _ 0 
+  _ _ 0 _ 0 
+    0 _ * 0 
+      0 0   
+
+ITERATION 600
+robot is trying to move left 
+robot gains [0, 0, 1, 0]
+Map: 1  Probability: 1.0 : 
+      0 0   
+    0 _ _ 0 
+  0 _ _ _ 0 
+0 _ _ 0 _ 0 
+0 _ _ 0 _ 0 
+  0 _ _ _ 0 
+  _ _ 0 _ 0 
+    0 * _ 0 
+      0 0   
+
+ACTUAL MAP AND LOCATION: 
+0 0 0 0 0 0 
+0 _ 0 _ _ 0 
+0 0 _ _ _ 0 
+0 _ _ 0 _ 0 
+0 _ _ 0 _ 0 
+0 0 _ _ _ 0 
+0 _ _ 0 _ 0 
+0 _ 0 * _ 0 
+0 0 0 0 0 0
+\end{verbatim}
+
+In each iteration, the robot moved in a different direction and gained a new sensor reading. By the end of 600 iterations, the robot had explored almost all of its environment, with the exception of the bottom left corner. Likely, if the robot continued to explore over more iterations, it would have eventually explored that section. Another thing this test case illustrates is the limitation of the robot to detect things that are blocked by obstacles. For instance, the robot cannot detect corners, since it can’t explore that part of the map, and the entire top left corner is blocked off because there are obstacles in the way. Another thing to note about this example is that because this specific environment had a lot of different obstacles, the robot didn't have too many different estimations of the different possible maps, since it probably was able to eliminate a lot of them when they didn't match the sensor readings
+
+
+\subsection{How the robot behaved in different environments}
+
+I also tested with many different environments of different shapes and sizes, and the robot was effective at navigating all of them. I did find a lot of insights into how the robot acted when faced with different kinds of environments. For instance, with larger environments that had fewer obstacles, the robot had a much harder time narrowing down the accurate maps, and oftentimes the map collection would include much more maps, in some cases up to 100 different possible maps, depending on the environment. This illustrates the issue of tracking error \cite{3-Accuracy_of_SLAM}, showing that obstacles and landmarks are helpful for robots to identify and map their environment. Another kind of environment that was often “confusing” for the robot were environments where sensor data was often the same at many different locations. This could result in the robot struggling to accurately determine things like the size of the environment or when there were multiple obstacles clumped together. An example of this is shown below, in which after 600 iterations, the robot had nine possible map estimations, all of which show different sizes but have the same general idea of the shape.
+
+\begin{verbatim}
+ITERATION 600
+robot is trying to move left 
+robot gains [1, 0, 1, 0]
+Map: 1  
+Probability: 2.551647822505827e-49:
+  0 0 0   
+0 _ * _ 0 
+0 _ 0 _ 0 
+0 _ _ _ 0 
+ 0 0 0   
+ 
+Map: 2  
+Probability: 1.040565468826101e-23:
+  0 0 0   
+0 _ * _ 0 
+0 _ 0 _ 0 
+0 _ 0 _ 0 
+0 _ _ _ 0 
+  0 0 0   
+  
+Map: 3  
+Probability: 3.304179911585695e-19:
+  0 0 0   
+0 _ * _ 0 
+0 _ 0 _ 0 
+0 _ 0 _ 0 
+0 _ 0 _ 0 
+0 _ _ _ 0 
+  0 0 0   
+  
+Map: 4  
+Probability: 5.515886664348086e-31:
+  0 0 0 0   
+0 _ * _ _ 0 
+0 _ 0 0 _ 0 
+0 _ _ _ _ 0 
+  0 0 0 0   
+  
+Map: 5  
+Probability: 2.2063546657392346e-31:
+  0 0 0 0   
+0 _ _ * _ 0 
+0 _ 0 0 _ 0 
+0 _ _ _ _ 0 
+  0 0 0 0   
+  
+Map: 6  
+Probability: 2.249386119140231e-05:
+  0 0 0 0   
+0 _ * _ _ 0 
+0 _ 0 0 _ 0 
+0 _ 0 0 _ 0 
+0 _ _ _ _ 0 
+  0 0 0 0   
+  
+Map: 7  
+Probability: 8.997544476560925e-06:
+  0 0 0 0   
+0 _ _ * _ 0 
+0 _ 0 0 _ 0 
+0 _ 0 0 _ 0 
+0 _ _ _ _ 0 
+  0 0 0 0   
+  
+Map: 8  
+Probability: 0.714263220424523:
+  0 0 0 0   
+0 _ * _ _ 0 
+0 _ 0 0 _ 0 
+0 _ 0 0 _ 0 
+0 _ 0 0 _ 0 
+0 _ _ _ _ 0 
+  0 0 0 0   
+  
+Map: 9  
+Probability: 0.28570528816980917:
+  0 0 0 0   
+0 _ _ * _ 0 
+0 _ 0 0 _ 0 
+0 _ 0 0 _ 0 
+0 _ 0 0 _ 0 
+0 _ _ _ _ 0 
+  0 0 0 0   
+  
+ACTUAL MAP AND LOCATION: 
+0 0 0 0 0 0 
+0 _ * _ _ 0 
+0 _ 0 0 _ 0 
+0 _ 0 0 _ 0 
+0 _ 0 0 _ 0 
+0 _ _ _ _ 0 
+0 0 0 0 0 0
+\end{verbatim}
+
+As shown in this example, the closest map estimation to the actual map was map# 8 with a probability of 71.42 percent. This shows that after 600 iterations, the algorithm had a somewhat high probability of guessing the correct map. 
+
+Another thing to note is that when testing with multiple different environments, it was found that after enough iterations, the robot could eventually figure out the maximum size the environment could be (length and width), and all map estimations will either be of that size or smaller.
+
+ 
+\section{Ethical Considerations} 
+% Why might people want to be careful about your project? What difficult decisions did you have to make?
+
+The main ethical consideration with my SLAM algorithm is the fact that I only accounted for one type of error probability, in this case it was motion noise. In real life, all sensors are imperfect \cite{3-Accuracy_of_SLAM}, and the true effectiveness of SLAM is its ability to account for all different errors. An example of how this is so crucial is with autonomous cars, since accuracy is extremely important to ensure driving safety. In addition, because my project was intended to be on a much smaller scale, there would still be a lot more work to be done if it were applied to an actual physical robot. If I wanted to expand my project, it would be interesting to explore more types of sensor imperfections and find different ways to make the map estimations have higher accuracy. 
+
+\section{Replication Instructions}
+%  How would someone else use your project?
+
+% (as an appendix to your paper; this does not count towards your page requirement/limit)
+
+Since my project was done entirely within Visual Studio Code, it is very simple for someone else to experiment with my algorithm. They can either create their own environment or use one of the many that I included (Most of which are commented out). To create their own environment they have to create nested arrays and use 0’s to represent walls or obstacles, and ‘-’ to represent empty space. They also have to set the robots initial location and the movement probability error. The robot’s initial location cannot be on an obstacle in the map, and if it is the algorithm will not work. 
+
+
+\section{Code Architecture Overview}
+
+% How would someone else extend your project?
+
+% (as an appendix to your paper; this does not count towards your page requirement/limit)
+
+The code in the algorithm is organized so that all the functions used are in the first section. The middle section includes the initial environment setup, which includes the creation of the environment, setting the robot’s initial location, and the movement probability error. The third section of the code is the loop in which all the steps are clearly laid out, and each iteration is a different movement by the robot. To extend the project to add new functionalities, this can be done in the first section. To make changes in the environment setup, this can be done in the second section. To add an extra steps in the iteration loop, or change the visual representation, such as adding new print statements, this would be done in the third section.
+
+
+
+\printbibliography
+
+\end{document}
